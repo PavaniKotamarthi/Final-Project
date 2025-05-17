@@ -1,6 +1,5 @@
-// WelcomeDashboard.tsx
-import React from "react";
-import Posts from "./Posts";
+import React from 'react';
+import { Link, useLocation } from 'react-router-dom';
 
 interface User {
   name: string;
@@ -11,10 +10,12 @@ interface User {
 interface Props {
   user: User;
   onLogout: () => void;
+  children?: React.ReactNode;
 }
 
-const WelcomeDashboard: React.FC<Props> = ({ user, onLogout }) => {
-  const isAdmin = user.role === "G7" || user.role === "G8";
+const WelcomeDashboard: React.FC<Props> = ({ user, onLogout, children }) => {
+  const location = useLocation();
+  const isActive = (path: string) => location.pathname === path;
 
   return (
     <div>
@@ -37,25 +38,47 @@ const WelcomeDashboard: React.FC<Props> = ({ user, onLogout }) => {
           <h3>
             Welcome {user.name} | Role: {user.role}
           </h3>
-          <button
-            onClick={onLogout}
-            style={{
-              backgroundColor: "#fff",
-              color: "#4a90e2",
-              border: "none",
-              padding: "5px 10px",
-              borderRadius: "4px",
-              cursor: "pointer",
-            }}
-          >
-            Logout
-          </button>
+          <div>
+            <Link
+              to="/dashboard"
+              style={{
+                marginRight: "20px",
+                color: isActive('/dashboard') ? '#ffd700' : '#fff',
+                textDecoration: "none",
+              }}
+            >
+              Posts
+            </Link>
+            <Link
+              to="/dashboard/questions"
+              style={{
+                marginRight: "20px",
+                color: isActive('/dashboard/questions') ? '#ffd700' : '#fff',
+                textDecoration: "none",
+              }}
+            >
+              Questions
+            </Link>
+            <button
+              onClick={onLogout}
+              style={{
+                backgroundColor: "#fff",
+                color: "#4a90e2",
+                border: "none",
+                padding: "5px 10px",
+                borderRadius: "4px",
+                cursor: "pointer",
+              }}
+            >
+              Logout
+            </button>
+          </div>
         </div>
       </header>
 
-      <main style={{ marginTop: "80px", padding: "20px" }}>
+      <main style={{ marginTop: "100px", padding: "20px" }}>
         <p>Email: {user.email}</p>
-        <Posts user={user} />
+        {children}
       </main>
     </div>
   );

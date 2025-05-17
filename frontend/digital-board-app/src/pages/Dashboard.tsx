@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import WelcomeDashboard from "./WelcomeDashboard";
+import { Outlet } from "react-router-dom";
 
 type User = {
   name: string;
@@ -23,6 +24,7 @@ const Dashboard = () => {
         const res = await axios.get<User>("http://localhost:5000/api/auth/protected", {
           headers: { Authorization: `Bearer ${token}` },
         });
+        localStorage.setItem("user", JSON.stringify(res.data))
         setUser(res.data);
       } catch {
         alert("Access denied");
@@ -34,12 +36,17 @@ const Dashboard = () => {
 
   const handleLogout = () => {
     localStorage.removeItem("token");
+    localStorage.removeItem("user");
     window.location.href = "/";
   };
 
   if (!user) return <p>Loading...</p>;
 
-  return <WelcomeDashboard user={user} onLogout={handleLogout} />;
+  return (
+    <WelcomeDashboard user={user} onLogout={handleLogout}>
+      <Outlet />
+    </WelcomeDashboard>
+  );
 };
 
 export default Dashboard;

@@ -3,6 +3,8 @@ import Dashboard from './pages/Dashboard';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ProtectedRoute from './components/ProtectedRoute';
+import PostsPage from './pages/PostsPage';
+import QuestionsPage from './pages/QuestionsPage';
 
 function App() {
   return (
@@ -11,7 +13,7 @@ function App() {
         <Route path="/" element={<Login />} />
         <Route path="/register" element={<Register />} />
         
-        {/* Protected route */}
+        {/* Protected Dashboard Route with Nested Routes */}
         <Route
           path="/dashboard"
           element={
@@ -19,7 +21,10 @@ function App() {
               <Dashboard />
             </ProtectedRoute>
           }
-        />
+        >
+          <Route index element={<PostsPage />} />
+          <Route path="questions" element={<QuestionsPage />} />
+        </Route>
       </Routes>
     </Router>
   );
