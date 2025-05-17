@@ -1,15 +1,29 @@
 const mongoose = require('mongoose');
 
-const postSchema = new mongoose.Schema({
-  content: { type: String },
-  author: { type: String, required: true },
-  imageBase64: { type: String }, // base64 string
-  pinned: { type: Boolean, default: false },
-  likes: { type: Number, default: 0 },
-  views: { type: Number, default: 0 },
-  comments: [{ text: String, createdAt: Date }],
-  createdAt: { type: Date, default: Date.now },
+const replySchema = new mongoose.Schema({
+  text: String,
+  author: String,
+  likes: [String],
+  createdAt: { type: Date, default: Date.now }
 });
 
+const commentSchema = new mongoose.Schema({
+  text: String,
+  author: String,
+  likes: [String],
+  createdAt: { type: Date, default: Date.now },
+  replies: [replySchema]
+});
+
+const postSchema = new mongoose.Schema({
+  content: String,
+  imageBase64: String,
+  author: String,
+  pinned: { type: Boolean, default: false },
+  likes: [String],
+  views: { type: Number, default: 0 },
+  comments: [commentSchema],
+  createdAt: { type: Date, default: Date.now }
+});
 
 module.exports = mongoose.model('Post', postSchema);

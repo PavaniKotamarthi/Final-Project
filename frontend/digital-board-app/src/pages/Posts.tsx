@@ -1,54 +1,140 @@
-import React, { useEffect, useState } from "react";
-import axios from "axios";
-import ReactQuill from "react-quill";
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
+import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
+import { FaThumbsUp, FaCommentDots, FaThumbtack, FaTrash } from 'react-icons/fa';
+
+interface Reply {
+  _id: string;
+  text: string;
+  author: string;
+  likes: string[];
+  createdAt: string;
+}
+
+interface Comment {
+  _id: string;
+  text: string;
+  author: string;
+  likes: string[];
+  createdAt: string;
+  replies: Reply[];
+}
 
 interface Post {
   _id: string;
   content: string;
-  imageBase64?: string; // changed from imageUrl
+  imageBase64?: string;
   author: string;
   pinned: boolean;
-  likes: number;
+  likes: string[];
   views: number;
-  comments: { text: string; createdAt: string }[];
+  comments: Comment[];
   createdAt: string;
 }
 
 interface User {
   name: string;
   email: string;
-  role: string; // e.g. G7, G8, etc.
+  role: string;
 }
+
+const modalOverlayStyle: React.CSSProperties = {
+  position: 'fixed',
+  top: 0,
+  left: 0,
+  width: '100%',
+  height: '100%',
+  background: 'rgba(0, 0, 0, 0.5)',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  zIndex: 1000,
+};
+
+const modalStyle: React.CSSProperties = {
+  background: '#fff',
+  padding: '20px',
+  borderRadius: '8px',
+  width: '90%',
+  maxWidth: '600px',
+};
 
 const Posts: React.FC<{ user: User }> = ({ user }) => {
   const [posts, setPosts] = useState<Post[]>([]);
-  const [content, setContent] = useState("");
+  const [content, setContent] = useState('');
   const [image, setImage] = useState<string | null>(null);
-
-  const isAdmin = user.role === "G7" || user.role === "G8";
+  const [showModal, setShowModal] = useState(false);
+  const [commentInputs, setCommentInputs] = useState<Record<string, string>>({});
+  const [replyInputs, setReplyInputs] = useState<Record<string, string>>({});
+  const isAdmin = user.role === 'G7' || user.role === 'G8';
 
   const fetchPosts = async () => {
-    const res = await axios.get("http://localhost:5000/getPosts");
+    const res = await axios.get('http://localhost:5000/getPosts');
     setPosts(res.data);
   };
 
   const handleSubmit = async () => {
-    const postData = {
-        content,
-        imageBase64: image, // renamed from imageUrl
-        author: user.email,
-    };
-
-    await axios.post("http://localhost:5000/api/posts", postData);
-    setContent("");
+    await axios.post('http://localhost:5000/api/posts', {
+      content,
+      imageBase64: image,
+      author: user.email,
+    });
+    setContent('');
     setImage(null);
+    setShowModal(false);
     fetchPosts();
   };
 
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => setImage(reader.result as string);
+      reader.readAsDataURL(file);
+    }
+  };
 
-  const handleLike = async (postId: string) => {
-    await axios.post(`http://localhost:5000/api/posts/${postId}/like`);
+  const handleLikePost = async (postId: string) => {
+    await axios.post(`http://localhost:5000/api/posts/${postId}/like`, {
+      userEmail: user.email,
+    });
+    fetchPosts();
+  };
+
+  const handleLikeComment = async (postId: string, commentId: string) => {
+    await axios.post(`http://localhost:5000/api/posts/${postId}/comments/${commentId}/like`, {
+      userEmail: user.email,
+    });
+    fetchPosts();
+  };
+
+  const handleLikeReply = async (postId: string, commentId: string, replyId: string) => {
+    await axios.post(`http://localhost:5000/api/posts/${postId}/comments/${commentId}/replies/${replyId}/like`, {
+      userEmail: user.email,
+    });
+    fetchPosts();
+  };
+
+  const handleAddComment = async (postId: string) => {
+    const text = commentInputs[postId];
+    if (!text) return;
+    await axios.post(`http://localhost:5000/api/posts/${postId}/comments`, {
+      text,
+      author: user.email,
+    });
+    setCommentInputs((prev) => ({ ...prev, [postId]: '' }));
+    fetchPosts();
+  };
+
+  const handleReplyComment = async (postId: string, commentId: string) => {
+    const text = replyInputs[commentId];
+    if (!text) return;
+    await axios.post(`http://localhost:5000/api/posts/${postId}/comments/${commentId}/reply`, {
+      text,
+      author: user.email,
+    });
+    setReplyInputs((prev) => ({ ...prev, [commentId]: '' }));
     fetchPosts();
   };
 
@@ -61,65 +147,125 @@ const Posts: React.FC<{ user: User }> = ({ user }) => {
     await axios.delete(`http://localhost:5000/api/posts/${postId}`);
     fetchPosts();
   };
- 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-        setImage(reader.result as string); // base64 string
-        };
-        reader.readAsDataURL(file); // this converts image to base64
-    }
-  };
-
 
   useEffect(() => {
     fetchPosts();
   }, []);
 
   return (
-    <div>
-      <h2>Posts</h2>
+    <div className="p-4">
+      <h2 className="text-xl font-bold mb-4">Posts</h2>
 
       {isAdmin && (
-        <div>
-          <ReactQuill theme="snow" value={content} onChange={setContent} />
-          <input type="file" accept="image/*" onChange={handleImageChange} />
-          <button onClick={handleSubmit}>Post</button>
-        </div>
+        <>
+          <button onClick={() => setShowModal(true)} className="bg-blue-500 text-white px-4 py-2 rounded mb-4">
+            + New Post
+          </button>
+          {showModal && (
+            <div style={modalOverlayStyle}>
+              <div style={modalStyle}>
+                <ReactQuill value={content} onChange={setContent} />
+                <input type="file" accept="image/*" onChange={handleImageChange} className="mt-2" />
+                <div className="flex justify-end gap-2 mt-4">
+                  <button onClick={handleSubmit} className="bg-green-500 text-white px-4 py-1 rounded">
+                    Post
+                  </button>
+                  <button onClick={() => setShowModal(false)} className="bg-red-400 text-white px-4 py-1 rounded">
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </>
       )}
 
-      <div>
-        {posts.length === 0 ? (
-          <p>No Posts to view</p>
-        ) : (
-          [...posts]
-            .sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0))
-            .map((post) => (
-              <div
-                key={post._id}
-                style={{
-                  border: "1px solid #ccc",
-                  margin: "10px",
-                  padding: "10px",
-                }}
-              >
-                <div dangerouslySetInnerHTML={{ __html: post.content }} />
-                {post.imageBase64 && <img src={post.imageBase64} alt="Post" style={{ maxWidth: "200px" }} />}
-                <p>Author: {post.author}</p>
-                <p>Likes: {post.likes} | Views: {post.views}</p>
-                <button onClick={() => handleLike(post._id)}>Like</button>
-                {isAdmin && (
-                  <>
-                    <button onClick={() => handlePin(post._id)}>Pin</button>
-                    <button onClick={() => handleDelete(post._id)}>Delete</button>
-                  </>
-                )}
+      {[...posts]
+        .sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0))
+        .map((post) => (
+          <div key={post._id} className="relative w-full max-w-xl mx-auto mb-6 p-4 bg-white rounded-xl shadow-md border border-gray-200">
+            {isAdmin && (
+              <div className="absolute top-3 right-3 flex gap-3 text-gray-500 hover:text-gray-700">
+                <FaThumbtack className="cursor-pointer" title="Pin Post" onClick={() => handlePin(post._id)} />
+                <FaTrash className="cursor-pointer" title="Delete Post" onClick={() => handleDelete(post._id)} />
               </div>
-            ))
-        )}
-      </div>
+            )}
+
+            <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: post.content }} />
+            {post.imageBase64 && (
+              <img
+                src={post.imageBase64}
+                alt="Post"
+                className="w-full max-h-[400px] object-contain mt-3 rounded-md"
+              />
+            )}
+
+            <div className="text-sm text-gray-500 mt-2">Author: {post.author}</div>
+
+            <div className="flex gap-4 mt-3 text-sm items-center text-gray-600">
+              <button className="flex items-center gap-1 hover:text-blue-500" onClick={() => handleLikePost(post._id)}>
+                <FaThumbsUp /> {post.likes.length} Likes
+              </button>
+              <div className="flex items-center gap-1">
+                <FaCommentDots /> {post.comments.length} Comments
+              </div>
+            </div>
+
+            <div className="mt-3">
+              <input
+                className="mt-3 w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                placeholder="Write your comment here... Press ENTER to submit"
+                value={commentInputs[post._id] || ''}
+                onChange={(e) => setCommentInputs({ ...commentInputs, [post._id]: e.target.value })}
+                onKeyDown={(e) => e.key === 'Enter' && handleAddComment(post._id)}
+              />
+
+              {post.comments.map((cmt) => (
+                <div key={cmt._id} className="mt-3 flex items-start gap-2">
+                  <div className="w-8 h-8 bg-gray-300 rounded-full" />
+                  <div className="bg-gray-100 px-3 py-2 rounded-lg w-full">
+                    <div className="text-sm font-semibold text-gray-800">{cmt.author}</div>
+                    <div className="text-sm text-gray-700 mt-1">{cmt.text}</div>
+                    <div className="flex gap-4 text-xs text-gray-500 mt-1">
+                      <button onClick={() => handleLikeComment(post._id, cmt._id)}>
+                        Like ({cmt.likes.length})
+                      </button>
+                      <button onClick={() => setReplyInputs({ ...replyInputs, [cmt._id]: replyInputs[cmt._id] || '' })}>
+                        Reply
+                      </button>
+                    </div>
+
+                    {replyInputs[cmt._id] !== undefined && (
+                      <input
+                        className="border rounded px-2 py-1 mt-2 w-full text-sm"
+                        placeholder="Write a reply..."
+                        value={replyInputs[cmt._id] || ''}
+                        onChange={(e) => setReplyInputs({ ...replyInputs, [cmt._id]: e.target.value })}
+                        onKeyDown={(e) => e.key === 'Enter' && handleReplyComment(post._id, cmt._id)}
+                      />
+                    )}
+
+                    {cmt.replies.map((reply) => (
+                      <div key={reply._id} className="mt-3 ml-6 flex items-start gap-2">
+                        <div className="w-6 h-6 bg-gray-300 rounded-full" />
+                        <div className="bg-gray-50 px-3 py-2 rounded-lg w-full">
+                          <div className="text-xs font-semibold text-gray-800">{reply.author}</div>
+                          <div className="text-xs text-gray-700 mt-1">{reply.text}</div>
+                          <button
+                            className="text-xs text-gray-500 mt-1"
+                            onClick={() => handleLikeReply(post._id, cmt._id, reply._id)}
+                          >
+                            Like ({reply.likes.length})
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
     </div>
   );
 };

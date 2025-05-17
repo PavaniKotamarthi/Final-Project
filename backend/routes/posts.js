@@ -17,32 +17,86 @@ router.get('/getPosts', async (req, res) => {
   res.json(posts);
 });
 
-// Like Post
-router.patch('/like/:id', async (req, res) => {
-  const post = await Post.findByIdAndUpdate(req.params.id, { $inc: { likes: 1 } }, { new: true });
-  res.json(post);
+router.post('/api/posts/:id/like', async (req, res) => {
+  const { email } = req.body;
+  const post = await Post.findById(req.params.id);
+  if (!post.likes.includes(email)) post.likes.push(email);
+  await post.save();
+  res.sendStatus(200);
 });
 
-// Comment
-router.patch('/comment/:id', async (req, res) => {
-  const { text } = req.body;
-  const post = await Post.findByIdAndUpdate(req.params.id, {
-    $push: { comments: { text, createdAt: new Date() } }
-  }, { new: true });
-  res.json(post);
+router.post('/api/posts/:id/pin', async (req, res) => {
+  const post = await Post.findById(req.params.id);
+  post.pinned = !post.pinned;
+  await post.save();
+  res.sendStatus(200);
 });
 
-// Pin Post
-router.patch('/pin/:id', async (req, res) => {
-  const post = await Post.findByIdAndUpdate(req.params.id, { pinned: true }, { new: true });
-  res.json(post);
-});
-
-// Delete Post
-router.delete('delete/:id', async (req, res) => {
+router.delete('/api/posts/:id', async (req, res) => {
   await Post.findByIdAndDelete(req.params.id);
-  res.json({ message: 'Post deleted' });
+  res.sendStatus(200);
 });
+
+router.post('/api/posts/:id/comments', async (req, res) => {
+  const { user, text } = req.body;
+  const post = await Post.findById(req.params.id);
+  post.comments.push({ user, text });
+  await post.save();
+  res.sendStatus(201);
+});
+
+router.post('/api/posts/:id/comments/:commentId/replies', async (req, res) => {
+  const { user, text } = req.body;
+  const post = await Post.findById(req.params.id);
+  const comment = post.comments.id(req.params.commentId);
+  comment.replies.push({ user, text });
+  await post.save();
+  res.sendStatus(201);
+});
+
+// Reply to a comment
+router.post('/api/posts/:postId/comments/:commentId/reply', async (req, res) => {
+  const { postId, commentId } = req.params;
+  const { text, author } = req.body;
+
+  try {
+    const post = await Post.findById(postId);
+    const comment = post.comments.id(commentId);
+
+    if (!comment) return res.status(404).json({ error: 'Comment not found' });
+
+    comment.replies.push({ text, author, likes: [] });
+    await post.save();
+
+    res.status(200).json({ message: 'Reply added successfully', comment });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to add reply', details: err.message });
+  }
+});
+
+// Like a reply
+router.post('/api/posts/:postId/comments/:commentId/replies/:replyId/like', async (req, res) => {
+  const { postId, commentId, replyId } = req.params;
+  const { userEmail } = req.body;
+
+  try {
+    const post = await Post.findById(postId);
+    const comment = post.comments.id(commentId);
+    const reply = comment?.replies.id(replyId);
+
+    if (!reply) return res.status(404).json({ error: 'Reply not found' });
+
+    if (!reply.likes.includes(userEmail)) {
+      reply.likes.push(userEmail);
+      await post.save();
+    }
+
+    res.status(200).json({ message: 'Reply liked successfully' });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to like reply', details: err.message });
+  }
+});
+
 
 // Set up multer for image storage (optional: you can also handle custom storage)
 const storage = multer.memoryStorage(); // or diskStorage if saving locally
