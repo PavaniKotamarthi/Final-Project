@@ -4,6 +4,7 @@ import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import PostActions from './PostActions';
 import PostComments from './PostComments';
+import { FaTimes } from 'react-icons/fa';
 
 interface Reply {
   _id: string;
@@ -72,9 +73,18 @@ const Posts: React.FC<{ user: User }> = ({ user }) => {
   const [commentInputs, setCommentInputs] = useState<Record<string, string>>({});
   const [replyInputs, setReplyInputs] = useState<Record<string, string>>({});
   const [showComments, setShowComments] = useState(false);
+  const [filter, setFilter] = useState<'all' | 'pinned' | 'mostLiked'>('all');
 
   const fetchPosts = async () => {
-    const res = await axios.get('http://localhost:5000/getPosts');
+    let url = 'http://localhost:5000/getPosts';
+
+    if (filter === 'pinned') {
+      url = 'http://localhost:5000/getPosts/pinned';
+    } else if (filter === 'mostLiked') {
+      url = 'http://localhost:5000/getPosts/mostLiked';
+    }
+
+    const res = await axios.get(url);
     setPosts(res.data);
   };
 
@@ -158,18 +168,43 @@ const Posts: React.FC<{ user: User }> = ({ user }) => {
     fetchPosts();
   };
 
-  const isAdmin = () =>{
+  const isAdmin = () => {
     return (user.role === 'G7' || user.role === 'G8');
   }
 
   useEffect(() => {
     isAdmin();
     fetchPosts();
-  }, []);
+  }, [filter]);
 
   return (
     <div className="p-4">
       <h2 className="text-xl font-bold mb-4">Posts</h2>
+      <div className="flex gap-4 mb-4 items-center">
+        <button
+          onClick={() => setFilter('pinned')}
+          className={`px-4 py-2 rounded ${filter === 'pinned' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
+        >
+          Pinned
+        </button>
+        <button
+          onClick={() => setFilter('mostLiked')}
+          className={`px-4 py-2 rounded ${filter === 'mostLiked' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
+        >
+          Most Liked
+        </button>
+
+        {filter !== 'all' && (
+          <button
+            onClick={() => setFilter('all')}
+            className="flex items-center text-sm bg-red-100 text-red-500 px-3 py-1 rounded hover:bg-red-200"
+          >
+            <FaTimes className="mr-1" />
+            Clear Filter
+          </button>
+        )}
+      </div>
+
 
       {isAdmin && (
         <>
@@ -223,17 +258,17 @@ const Posts: React.FC<{ user: User }> = ({ user }) => {
             />
 
             {showComments && (
-              <PostComments 
-              postId={post._id}
-              comments={post.comments}
-              commentInputs={commentInputs}
-              replyInputs={replyInputs}
-              setCommentInputs={setCommentInputs}
-              setReplyInputs={setReplyInputs}
-              handleAddComment={handleAddComment}
-              handleReplyComment={handleReplyComment}
-              handleLikeComment={handleLikeComment}
-              handleLikeReply={handleLikeReply} />
+              <PostComments
+                postId={post._id}
+                comments={post.comments}
+                commentInputs={commentInputs}
+                replyInputs={replyInputs}
+                setCommentInputs={setCommentInputs}
+                setReplyInputs={setReplyInputs}
+                handleAddComment={handleAddComment}
+                handleReplyComment={handleReplyComment}
+                handleLikeComment={handleLikeComment}
+                handleLikeReply={handleLikeReply} />
             )}
 
           </div>

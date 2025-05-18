@@ -17,12 +17,45 @@ router.get('/getPosts', async (req, res) => {
   res.json(posts);
 });
 
+// Get pinned posts
+router.get('/getPosts/pinned', async (req, res) => {
+  const posts = await Post.find({ pinned: true }).sort({ createdAt: -1 });
+  res.json(posts);
+});
+
+// Get most liked posts
+router.get('/getPosts/mostLiked', async (req, res) => {
+  const posts = await Post.aggregate([
+    {
+      $addFields: {
+        likesCount: { $size: '$likes' }
+      }
+    },
+    {
+      $sort: { likesCount: -1, createdAt: -1 }
+    }
+  ]);
+  res.json(posts);
+});
+
 router.post('/api/posts/:id/like', async (req, res) => {
-  const { email } = req.body;
+  const { email, username } = req.body;
   const post = await Post.findById(req.params.id);
-  if (!post.likes.includes(email)) post.likes.push(email);
+
+  if (!post) return res.status(404).json({ message: 'Post not found' });
+
+  const existingLikeIndex = post.likes.findIndex(like => like?.email === email);
+
+  if (existingLikeIndex === -1) {
+    // Add like
+    post.likes.push({ email, username });
+  } else {
+    // Remove like
+    post.likes.splice(existingLikeIndex, 1);
+  }
+
   await post.save();
-  res.sendStatus(200);
+  res.status(200).json({ likes: post.likes.length });
 });
 
 router.post('/api/posts/:id/pin', async (req, res) => {

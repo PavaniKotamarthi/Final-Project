@@ -17,13 +17,18 @@ const commentSchema = new mongoose.Schema({
   replies: [replySchema]
 });
 
+const likesSchema = new mongoose.Schema({
+  username: String,
+  email: String
+});
+
 const postSchema = new mongoose.Schema({
   content: String,
   imageBase64: String,
   author: String,
   username: String,
   pinned: { type: Boolean, default: false },
-  likes: [String],
+  likes: [likesSchema],
   views: { type: Number, default: 0 },
   comments: [commentSchema],
   createdAt: { type: Date, default: Date.now }
