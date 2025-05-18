@@ -1,7 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import io from 'socket.io-client';
-
-const socket = io('http://localhost:5000');
+import socket from '../socket'; // ⬅️ Import the shared socket instance
 
 interface Message {
   text: string;
@@ -15,8 +13,17 @@ const Questions: React.FC<{ user: { name: string; email: string } }> = ({ user }
   const chatRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    socket.on('chat-history', (msgs: Message[]) => setMessages(msgs));
-    socket.on('receive-message', (msg: Message) => setMessages((prev) => [...prev, msg]));
+    // Listen for initial chat history
+    socket.on('chat-history', (msgs: Message[]) => {
+      console.log(msgs);
+      setMessages(msgs);
+    });
+
+    // Listen for new messages
+    socket.on('receive-message', (msg: Message) => {
+      setMessages((prev) => [...prev, msg]);
+    });
+
     return () => {
       socket.off('chat-history');
       socket.off('receive-message');
