@@ -1,10 +1,19 @@
 import React from 'react';
 import Questions from './Questions';
 
-const user = JSON.parse(localStorage.getItem('user') || '{}');
+interface User {
+  name: string;
+  email: string;
+  role: string;
+}
 
 const QuestionsPage = () => {
-  return <Questions user={user} />;
+  const user: User = JSON.parse(localStorage.getItem('user') || '{}');
+  return (
+    <>
+      {user && user.email && <Questions user={user} />}
+    </>
+  );
 };
 
 export default QuestionsPage;

@@ -1,10 +1,19 @@
 import React from 'react';
 import Posts from './Posts';
 
-const user = JSON.parse(localStorage.getItem('user') || '{}');
+interface User {
+  name: string;
+  email: string;
+  role: string;
+}
 
 const PostsPage = () => {
-  return <Posts user={user} />;
+  const user: User = JSON.parse(localStorage.getItem('user') || '{}');
+  return (
+    <>
+      {user && user.role && <Posts user={user} />}
+    </>
+  );
 };
 
 export default PostsPage;

@@ -65,6 +65,10 @@ const modalStyle: React.CSSProperties = {
   maxWidth: '600px',
 };
 
+function getAdmin(user: User){
+  return (user.role === 'G7' || user.role === 'G8')
+}
+
 const Posts: React.FC<{ user: User }> = ({ user }) => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [content, setContent] = useState('');
@@ -74,6 +78,7 @@ const Posts: React.FC<{ user: User }> = ({ user }) => {
   const [replyInputs, setReplyInputs] = useState<Record<string, string>>({});
   const [showComments, setShowComments] = useState(false);
   const [filter, setFilter] = useState<'all' | 'pinned' | 'mostLiked'>('all');
+  const [isAdmin, setIsAdmin] = useState<Boolean>(user.role === 'G7' || user.role === 'G8');
 
   const fetchPosts = async () => {
     let url = 'http://localhost:5000/getPosts';
@@ -168,12 +173,9 @@ const Posts: React.FC<{ user: User }> = ({ user }) => {
     fetchPosts();
   };
 
-  const isAdmin = () => {
-    return (user.role === 'G7' || user.role === 'G8');
-  }
-
+  
   useEffect(() => {
-    isAdmin();
+    setIsAdmin(getAdmin(user));
     fetchPosts();
   }, [filter]);
 
@@ -249,7 +251,7 @@ const Posts: React.FC<{ user: User }> = ({ user }) => {
               postId={post._id}
               likesCount={post.likes.length}
               commentsCount={post.comments.length}
-              isAdmin={isAdmin}
+              isAdmin={isAdmin === true}
               pinned={post.pinned}
               onLike={() => handleLikePost(post._id)}
               onPin={() => handlePin(post._id)}
