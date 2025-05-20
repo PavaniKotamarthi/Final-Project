@@ -36,7 +36,21 @@ router.get('/getPosts/mostLiked', async (req, res) => {
     }
   ]);
   res.json(posts);
+  // const posts = await Post.find({})
+  //   .lean()
+  //   .sort({ 'likes.length': -1, createdAt: -1 }); // This doesn't work directly
+
+  // // Workaround: manually compute and sort
+  // const sorted = posts
+  //   .map(post => ({ ...post, likesCount: post.likes?.length || 0 }))
+  //   .sort((a, b) => {
+  //     if (b.likesCount !== a.likesCount) return b.likesCount - a.likesCount;
+  //     return new Date(b.createdAt) - new Date(a.createdAt);
+  //   });
+
+  // res.json(sorted);
 });
+
 
 router.post('/api/posts/:id/like', async (req, res) => {
   const { email, username } = req.body;
@@ -44,11 +58,14 @@ router.post('/api/posts/:id/like', async (req, res) => {
 
   if (!post) return res.status(404).json({ message: 'Post not found' });
 
-  const existingLikeIndex = post.likes.findIndex(like => like?.email === email);
+  const existingLikeIndex = post.likes.findIndex(like => like?.username === username);
+
+  console.log(post.likes);
+  console.log(existingLikeIndex);
 
   if (existingLikeIndex === -1) {
     // Add like
-    post.likes.push({ email, username });
+    post.likes.push(req.body);
   } else {
     // Remove like
     post.likes.splice(existingLikeIndex, 1);
