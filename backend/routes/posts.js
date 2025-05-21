@@ -52,6 +52,23 @@ router.get('/getPosts/mostLiked', async (req, res) => {
   // res.json(sorted);
 });
 
+// PUT route to update post content/image
+router.put('/api/posts/:postId', authMiddleware, async (req, res) => {
+  const { postId } = req.params;
+  const { content, imageBase64 } = req.body;
+
+  try {
+    const updatedPost = await Post.findByIdAndUpdate(
+      postId,
+      { content, imageBase64 },
+      { new: true }
+    );
+    res.json(updatedPost);
+  } catch (err) {
+    console.error('Error updating post:', err);
+    res.status(500).json({ message: 'Failed to update post' });
+  }
+});
 
 router.post('/api/posts/:id/like', async (req, res) => {
   const { email, username } = req.body;

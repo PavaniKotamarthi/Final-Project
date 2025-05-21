@@ -87,6 +87,7 @@ const Posts: React.FC<{ user: User }> = ({ user }) => {
   const [showComments, setShowComments] = useState(false);
   const [filter, setFilter] = useState<'all' | 'pinned' | 'mostLiked'>('all');
   const [isAdmin, setIsAdmin] = useState<Boolean>(user.role === 'G7' || user.role === 'G8');
+  const [editingPostId, setEditingPostId] = useState<string | null>(null);
 
   const token = localStorage.getItem("token")
 
@@ -104,15 +105,28 @@ const Posts: React.FC<{ user: User }> = ({ user }) => {
   };
 
   const handleSubmit = async () => {
-    await axios.post('http://localhost:5000/api/posts', {
-      content,
-      imageBase64: image,
-      username: user.name,
-      author: user.email,
-    });
+    if (editingPostId) {
+      await axios.put(`http://localhost:5000/api/posts/${editingPostId}`, {
+        content,
+        imageBase64: image
+      }, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+    } else {
+      await axios.post('http://localhost:5000/api/posts', {
+        content,
+        imageBase64: image,
+        username: user.name,
+        author: user.email,
+      });
+    }
+
     setContent('');
     setImage(null);
     setShowModal(false);
+    setEditingPostId(null);
     fetchPosts();
   };
 
@@ -203,6 +217,13 @@ const Posts: React.FC<{ user: User }> = ({ user }) => {
     }
   };
 
+  const handleEditPost = (postId: string, content: string, imageBase64?: string) => {
+    setEditingPostId(postId);
+    setContent(content);
+    setImage(imageBase64 || null);
+    setShowModal(true);
+  };
+
   useEffect(() => {
     setIsAdmin(getAdmin(user));
     fetchPosts();
@@ -245,11 +266,14 @@ const Posts: React.FC<{ user: User }> = ({ user }) => {
           {showModal && (
             <div style={modalOverlayStyle}>
               <div style={modalStyle}>
+                <h3 className="text-lg font-semibold mb-2">
+                  {editingPostId ? 'Edit Post' : 'Create New Post'}
+                </h3>
                 <ReactQuill value={content} onChange={setContent} />
                 <input type="file" accept="image/*" onChange={handleImageChange} className="mt-2" />
                 <div className="flex justify-end gap-2 mt-4">
                   <button onClick={handleSubmit} className="bg-green-500 text-white px-4 py-1 rounded">
-                    Post
+                    {editingPostId ? 'Update' : 'Post'}
                   </button>
                   <button onClick={() => setShowModal(false)} className="bg-red-400 text-white px-4 py-1 rounded">
                     Cancel
@@ -285,6 +309,7 @@ const Posts: React.FC<{ user: User }> = ({ user }) => {
                 laugh: 0,
                 wow: 0
               }}
+              content={post.content}
               userEmail={user.email}
               commentsCount={post.comments.length}
               isAdmin={isAdmin === true}
@@ -293,6 +318,7 @@ const Posts: React.FC<{ user: User }> = ({ user }) => {
               onPin={() => handlePin(post._id)}
               onDelete={() => handleDelete(post._id)}
               onToggleComments={() => setShowComments(prev => !prev)}
+              onEdit={() => handleEditPost(post._id, post.content, post.imageBase64)}
             />
 
 
