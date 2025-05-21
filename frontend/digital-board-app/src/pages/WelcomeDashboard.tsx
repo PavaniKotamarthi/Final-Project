@@ -42,7 +42,7 @@ const WelcomeDashboard: React.FC<Props> = ({ user, onLogout, children }) => {
             <Link
               to="/dashboard"
               style={{
-                marginRight: "20px",
+                marginRight: "30px",
                 color: isActive('/dashboard') ? '#ffd700' : '#fff',
                 textDecoration: "none",
               }}
@@ -52,31 +52,50 @@ const WelcomeDashboard: React.FC<Props> = ({ user, onLogout, children }) => {
             <Link
               to="/dashboard/questions"
               style={{
-                marginRight: "20px",
+                marginRight: "30px",
                 color: isActive('/dashboard/questions') ? '#ffd700' : '#fff',
                 textDecoration: "none",
               }}
             >
               Questions
             </Link>
-            <button
-              onClick={onLogout}
+            <Link to="/dashboard/skills" style={{
+              marginRight: "30px",
+              color: isActive('/dashboard/skills') ? '#ffd700' : '#fff',
+              textDecoration: "none",
+            }}>
+              Skills
+            </Link>
+
+            <Link
+              to="#"
+              className='disabled cursor-none'
               style={{
-                backgroundColor: "#fff",
-                color: "#4a90e2",
-                border: "none",
-                padding: "5px 10px",
-                borderRadius: "4px",
-                cursor: "pointer",
+                marginRight: "30px",
+                color: '#fff',
+                textDecoration: "none",
               }}
             >
-              Logout
-            </button>
+              Teams
+            </Link>
           </div>
+          <button
+            onClick={onLogout}
+            style={{
+              backgroundColor: "#fff",
+              color: "#4a90e2",
+              border: "none",
+              padding: "5px 10px",
+              borderRadius: "4px",
+              cursor: "pointer",
+            }}
+          >
+            Logout
+          </button>
         </div>
       </header>
 
-      <main style={{ marginTop: "30px", width: "100vw",padding: "20px" }}>
+      <main style={{ marginTop: "30px", width: "100vw", padding: "30px" }}>
         {children}
       </main>
     </div>

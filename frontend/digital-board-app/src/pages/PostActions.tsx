@@ -125,7 +125,7 @@ const PostActions: React.FC<PostActionsProps> = ({
       </div>
       {/* Admin Icons */}
       {isAdmin && (
-        <div className="absolute top-10 right-3 flex gap-3 text-gray-500">
+        <div className="absolute top-5 right-3 flex gap-3 text-gray-500">
           <FaEdit
             className="cursor-pointer hover:text-blue-600"
             title="Edit Post"

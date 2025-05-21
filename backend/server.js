@@ -11,6 +11,8 @@ const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const jwt = require('jsonwebtoken');
 const Employee = require('./models/Employee');
 const User = require('./models/User');
+const skillsRoutes = require('./routes/skills');
+
 
 dotenv.config();
 
@@ -102,6 +104,7 @@ mongoose
 app.use('/api/auth', authRoutes);
 app.use('/', postsRoutes); // prefixed route
 app.use('/auth', passportRoutes);
+app.use('/api/skills', skillsRoutes);
 
 // ✅ Integrate WebSocket
 require('./routes/messages')(server); // changed path if needed
