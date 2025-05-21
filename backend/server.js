@@ -8,6 +8,9 @@ const postsRoutes = require('./routes/posts');
 const passportRoutes = require('./routes/passport');
 const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
+const jwt = require('jsonwebtoken');
+const Employee = require('./models/Employee');
+const User = require('./models/User');
 
 dotenv.config();
 
@@ -26,12 +29,42 @@ app.use(cors({
 app.use(passport.initialize());
 
 passport.use(new GoogleStrategy({
-  clientID: 'YOUR_GOOGLE_CLIENT_ID',
-  clientSecret: 'YOUR_CLIENT_SECRET',
+  clientID: process.env.GOOGLE_CLIENT_ID,
+  clientSecret: process.env.GOOGLE_CLIENT_SECRET,
   callbackURL: 'http://localhost:5000/auth/google/callback'
-}, (accessToken, refreshToken, profile, done) => {
+}, async (accessToken, refreshToken, profile, done) => {
   // Handle user logic
-  return done(null, profile);
+  try {
+    // If emails are available, use them. If not, fail.
+    const email = profile.emails && profile.emails.length > 0 ? profile.emails[0].value : null;;
+
+    if (!email) {
+      console.error('No email returned from GitHub profile:', profile);
+      return done(new Error('No email associated with this GitHub account.'));
+    }
+
+    let employee = await Employee.findOne({ email });
+
+    if (!employee) {
+      return
+    }
+    else {
+      let user = await User.findOne({ email });
+
+      if (!user) {
+        user = await User.create({
+          email,
+          name: profile.username,
+          password: 'oauth-no-password',
+          provider: 'github'
+        });
+      }
+      return done(null, user);
+    }
+
+  } catch (err) {
+    return done(err, null);
+  }
 }));
 
 app.get('/auth/google',
@@ -42,7 +75,14 @@ app.get('/auth/google/callback',
   passport.authenticate('google', { session: false }),
   (req, res) => {
     // Redirect to frontend with token
-    res.redirect('http://localhost:3000/oauth-success?token=JWT_TOKEN');
+    const token = jwt.sign(
+      { id: req.user._id, email: req.user.email },
+      process.env.JWT_SECRET,
+      { expiresIn: '1d' }
+    );
+
+    // Redirect to frontend with JWT in query string
+    res.redirect(`http://localhost:5173/oauth-success?token=${token}`);
   }
 );
 
@@ -61,7 +101,7 @@ mongoose
 // ✅ API Routes
 app.use('/api/auth', authRoutes);
 app.use('/', postsRoutes); // prefixed route
-app.use('/auth', passportRoutes); 
+app.use('/auth', passportRoutes);
 
 // ✅ Integrate WebSocket
 require('./routes/messages')(server); // changed path if needed

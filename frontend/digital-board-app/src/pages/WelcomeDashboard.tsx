@@ -76,8 +76,7 @@ const WelcomeDashboard: React.FC<Props> = ({ user, onLogout, children }) => {
         </div>
       </header>
 
-      <main style={{ marginTop: "100px", padding: "20px" }}>
-        <p>Email: {user.email}</p>
+      <main style={{ marginTop: "50px", padding: "20px" }}>
         {children}
       </main>
     </div>

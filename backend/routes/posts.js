@@ -26,30 +26,26 @@ router.get('/getPosts/pinned', async (req, res) => {
 
 // Get most liked posts
 router.get('/getPosts/mostLiked', async (req, res) => {
-  const posts = await Post.aggregate([
-    {
-      $addFields: {
-        likesCount: { $size: '$likes' }
+  try {
+    const posts = await Post.aggregate([
+      {
+        $addFields: {
+          reactionsCount: { $size: '$reactions' }
+        }
+      },
+      {
+        $sort: { reactionsCount: -1, createdAt: -1 }
+      },
+      {
+        $limit: 2
       }
-    },
-    {
-      $sort: { likesCount: -1, createdAt: -1 }
-    }
-  ]);
-  res.json(posts);
-  // const posts = await Post.find({})
-  //   .lean()
-  //   .sort({ 'likes.length': -1, createdAt: -1 }); // This doesn't work directly
+    ]);
+    res.json(posts);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to fetch most reacted posts' });
+  }
 
-  // // Workaround: manually compute and sort
-  // const sorted = posts
-  //   .map(post => ({ ...post, likesCount: post.likes?.length || 0 }))
-  //   .sort((a, b) => {
-  //     if (b.likesCount !== a.likesCount) return b.likesCount - a.likesCount;
-  //     return new Date(b.createdAt) - new Date(a.createdAt);
-  //   });
-
-  // res.json(sorted);
 });
 
 // PUT route to update post content/image

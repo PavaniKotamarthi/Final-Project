@@ -3,6 +3,7 @@ import { FaThumbtack, FaTrash, FaCommentDots, FaEdit } from 'react-icons/fa';
 import ReactQuill from 'react-quill';
 
 interface Reaction {
+  username: string;
   type: ReactionType;
   email: string;
 }
@@ -60,8 +61,7 @@ const PostActions: React.FC<PostActionsProps> = ({
 }) => {
   const [showReactions, setShowReactions] = useState(false);
   const [userReaction, setUserReaction] = useState<ReactionType | null>(null);
-  const [isEditOpen, setIsEditOpen] = useState(false);
-  const [editedContent, setEditedContent] = useState(content);
+  const [showReactionOverlay, setShowReactionOverlay] = useState(false);
 
   // Set initial user reaction from reactions list
   useEffect(() => {
@@ -137,6 +137,63 @@ const PostActions: React.FC<PostActionsProps> = ({
             title="Delete Post"
             onClick={handleDelete}
           />
+
+        </div>
+      )}
+      {/* ✅ Total Reactions Count in bottom right */}
+      <div className="cursor-pointer absolute bottom-5 right-3 text-lg text-gray-500"
+        onClick={() => setShowReactionOverlay(true)}>
+        Total Reactions: {Object.values(reactionCounts).reduce((sum, count) => sum + count, 0)}
+      </div>
+      {
+        !isAdmin && pinned && (
+          <div className='absolute top-10 right-3 flex gap-3 text-gray-500'>
+            <FaThumbtack
+              className='text-red-500'
+              title="Pin Post"
+            />
+          </div>
+        )
+      }
+      {showReactionOverlay && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-[1001] flex justify-end">
+          <div className="bg-white w-80 p-4 shadow-lg overflow-y-auto relative">
+            <button
+              className="absolute top-2 right-3 text-gray-600 hover:text-black"
+              onClick={() => setShowReactionOverlay(false)}
+            >
+              ✕
+            </button>
+            <h3 className="text-lg font-semibold mb-4">Reactions</h3>
+
+            {/* Totals by type */}
+            <div className="flex gap-4 mb-4">
+              {reactionOptions.map((opt) => (
+                <div key={opt.type} className="flex items-center gap-1 text-sm">
+                  <span>{opt.emoji}</span>
+                  <span>{reactionCounts[opt.type as keyof ReactionCounts]}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* List of users */}
+            <ul className="space-y-3">
+              {reactions.map((r, index) => (
+                <li key={index} className="flex items-center gap-3 border-b pb-2">
+                  <div className="bg-blue-100 text-blue-600 font-bold rounded-full h-8 w-8 flex items-center justify-center text-xs overflow-hidden text-center">
+                    {r.email.charAt(0).toUpperCase()}{r.email.charAt(1).toUpperCase()}
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm max-w-[150px] truncate" title={r.email}>{r.email}</p>
+                    <p className="text-xs text-gray-400">{r.type}</p>
+                  </div>
+                  <span className="text-lg">
+                    {reactionOptions.find((opt) => opt.type === r.type)?.emoji}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
       )}
 
