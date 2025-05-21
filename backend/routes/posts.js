@@ -2,6 +2,7 @@ const express = require('express');
 const Post = require('../models/Post');
 const router = express.Router();
 const multer = require('multer');
+const authMiddleware = require('../middleware/authMiddleware'); // ✅ <-- Add this line
 
 // Create Post
 router.post('/create', async (req, res) => {
@@ -175,6 +176,82 @@ router.post('/api/posts/:postId/comments/:commentId/replies/:replyId/like', asyn
 // Set up multer for image storage (optional: you can also handle custom storage)
 const storage = multer.memoryStorage(); // or diskStorage if saving locally
 const upload = multer({ storage });
+
+// PATCH route to react to a post
+router.patch('/api/posts/:postId/react', authMiddleware, async (req, res) => {
+  try {
+    const { postId } = req.params;
+    const { reaction } = req.body;
+    const userEmail = req.user.email;
+    const username = req.user.name;
+
+    if (!reaction || !['like', 'love', 'laugh', 'wow'].includes(reaction)) {
+      return res.status(400).json({ message: 'Invalid reaction type' });
+    }
+
+    const post = await Post.findById(postId);
+    if (!post) return res.status(404).json({ message: 'Post not found' });
+
+    // Remove existing reaction by user if it exists
+    post.reactions = post.reactions.filter(r => r.email !== userEmail);
+
+    // Add new reaction
+    post.reactions.push({ type: reaction, email: userEmail, name: username });
+
+    // Recalculate reactionCounts
+    const counts = { like: 0, love: 0, laugh: 0, wow: 0 };
+    post.reactions.forEach(r => {
+      if (counts[r.type] !== undefined) counts[r.type]++;
+    });
+    post.reactionCounts = counts;
+
+    await post.save();
+
+    res.status(200).json({
+      success: true,
+      reactionCounts: post.reactionCounts,
+      userReaction: reaction
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+
+// router.post('/api/posts/:postId/react', async (req, res) => {
+//   const { postId } = req.params;
+//   const { email, username, reaction } = req.body;
+
+//   const post = await Post.findById(postId);
+//   if (!post) return res.status(404).json({ error: 'Post not found' });
+
+//   // Remove old reaction from this user
+//   post.reactions = post.reactions.filter(r => r.email !== email);
+
+//   // Add new one
+//   post.reactions.push({ type: reaction, email, username });
+
+//   // Compute counts
+//   const reactionCounts = {
+//     like: 0, love: 0, laugh: 0, wow: 0
+//   };
+//   for (const r of post.reactions) {
+//     if (reactionCounts[r.type] !== undefined) {
+//       reactionCounts[r.type]++;
+//     }
+//   }
+
+//   post.reactionCounts = {...reactionCounts}
+
+//   await post.save();
+
+//   res.json({
+//     success: true,
+//     userReaction: reaction,
+//     reactionCounts
+//   });
+// });
 
 router.post('/api/posts', async (req, res) => {
   const { content, imageBase64, username, author } = req.body;

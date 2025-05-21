@@ -6,6 +6,7 @@ import PostActions from './PostActions';
 import PostComments from './PostComments';
 import { FaTimes } from 'react-icons/fa';
 
+
 interface Reply {
   _id: string;
   text: string;
@@ -36,6 +37,13 @@ interface Post {
   comments: Comment[];
   createdAt: string;
   username: string;
+  reactions: any[];
+  reactionCounts?: {
+    like: number,
+    love: number,
+    laugh: number,
+    wow: number
+  }
 }
 
 interface User {
@@ -65,7 +73,7 @@ const modalStyle: React.CSSProperties = {
   maxWidth: '600px',
 };
 
-function getAdmin(user: User){
+function getAdmin(user: User) {
   return (user.role === 'G7' || user.role === 'G8')
 }
 
@@ -79,6 +87,8 @@ const Posts: React.FC<{ user: User }> = ({ user }) => {
   const [showComments, setShowComments] = useState(false);
   const [filter, setFilter] = useState<'all' | 'pinned' | 'mostLiked'>('all');
   const [isAdmin, setIsAdmin] = useState<Boolean>(user.role === 'G7' || user.role === 'G8');
+
+  const token = localStorage.getItem("token")
 
   const fetchPosts = async () => {
     let url = 'http://localhost:5000/getPosts';
@@ -117,7 +127,7 @@ const Posts: React.FC<{ user: User }> = ({ user }) => {
 
   const handleLikePost = async (postId: string) => {
     await axios.post(`http://localhost:5000/api/posts/${postId}/like`, {
-      userEmail: user.email,
+      email: user.email,
       username: user.name
     });
     fetchPosts();
@@ -173,7 +183,26 @@ const Posts: React.FC<{ user: User }> = ({ user }) => {
     fetchPosts();
   };
 
-  
+  const handleReact = async (postId: string, reaction: 'like' | 'love' | 'laugh' | 'wow') => {
+    try {
+      const res = await axios.patch(`http://localhost:5000/api/posts/${postId}/react`,
+        { reaction }, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      // Update your local post state with the returned updated post
+      setPosts((prevPosts) =>
+        prevPosts.map((post) =>
+          post._id === postId ? { ...post, ...res.data } : post
+        )
+      );
+    } catch (error) {
+      console.error('Error reacting to post:', error);
+    }
+  };
+
   useEffect(() => {
     setIsAdmin(getAdmin(user));
     fetchPosts();
@@ -249,15 +278,23 @@ const Posts: React.FC<{ user: User }> = ({ user }) => {
 
             <PostActions
               postId={post._id}
-              likesCount={post.likes.length}
+              reactions={post.reactions}
+              reactionCounts={post.reactionCounts || {
+                like: 0,
+                love: 0,
+                laugh: 0,
+                wow: 0
+              }}
+              userEmail={user.email}
               commentsCount={post.comments.length}
               isAdmin={isAdmin === true}
               pinned={post.pinned}
-              onLike={() => handleLikePost(post._id)}
+              onReact={(reaction) => handleReact(post._id, reaction)}
               onPin={() => handlePin(post._id)}
               onDelete={() => handleDelete(post._id)}
               onToggleComments={() => setShowComments(prev => !prev)}
             />
+
 
             {showComments && (
               <PostComments

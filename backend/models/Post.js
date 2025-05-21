@@ -31,7 +31,20 @@ const postSchema = new mongoose.Schema({
   ],
   views: { type: Number, default: 0 },
   comments: [commentSchema],
-  createdAt: { type: Date, default: Date.now }
+  createdAt: { type: Date, default: Date.now },
+  reactions: [
+    {
+      type: { type: String, enum: ['like', 'love', 'laugh', 'wow'] },
+      email: String,
+      username: String,
+    }
+  ],
+  reactionCounts: {
+    like: { type: Number, default: 0 },
+    love: { type: Number, default: 0 },
+    laugh: { type: Number, default: 0 },
+    wow: { type: Number, default: 0 }
+  }
 });
 
 module.exports = mongoose.model('Post', postSchema);

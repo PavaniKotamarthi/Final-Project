@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import WelcomeDashboard from "./WelcomeDashboard";
-import { Outlet } from "react-router-dom";
+import { Outlet, redirect } from "react-router-dom";
 
 type User = {
   name: string;
@@ -28,6 +28,7 @@ const Dashboard = () => {
         setUser(res.data);
       } catch {
         alert("Access denied");
+        redirect('/')
       }
     };
 
