@@ -3,6 +3,7 @@ const passport = require('passport');
 const GitHubStrategy = require('passport-github2').Strategy;
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const Employee = require('../models/Employee');
 require('dotenv').config();
 
 const router = express.Router();
@@ -11,25 +12,40 @@ const router = express.Router();
 passport.use(new GitHubStrategy({
   clientID: process.env.GITHUB_CLIENT_ID,
   clientSecret: process.env.GITHUB_CLIENT_SECRET,
-  callbackURL: "http://localhost:5000/auth/github/callback"
-}, (accessToken, refreshToken, profile, done) => {
-  // try {
-  //   const email = profile.emails[0].value;
-  //   let user = await User.findOne({ email });
+  callbackURL: "http://localhost:5000/auth/github/callback",
+  scope: ['user:email']
+}, async (accessToken, refreshToken, profile, done) => {
+  try {
+    // If emails are available, use them. If not, fail.
+    const email = profile.emails && profile.emails.length > 0 ? profile.emails[0].value : null;
 
-  //   if (!user) {
-  //     user = await User.create({
-  //       email,
-  //       name: profile.username,
-  //       provider: 'github'
-  //     });
-  //   }
+    if (!email) {
+      console.error('No email returned from GitHub profile:', profile);
+      return done(new Error('No email associated with this GitHub account.'));
+    }
 
-  //   return done(null, user);
-  // } catch (err) {
-  //   return done(err, null);
-  // }
-  return done(null, profile)
+    let employee = await Employee.findOne({ email });
+
+    if (!employee) {
+      return
+    }
+    else {
+      let user = await User.findOne({ email });
+
+      if (!user) {
+        user = await User.create({
+          email,
+          name: profile.username,
+          password: 'oauth-no-password', 
+          provider: 'github'
+        });
+      }
+      return done(null, user);
+    }
+
+  } catch (err) {
+    return done(err, null);
+  }
 }));
 
 // ✅ GitHub login route

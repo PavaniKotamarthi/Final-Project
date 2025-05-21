@@ -18,7 +18,10 @@ const server = http.createServer(app);
 
 // ✅ Middleware
 app.use(cors());
-app.use(cors({ origin: 'http://localhost:3000', credentials: true }));
+app.use(cors({
+  origin: ['http://localhost:3000', 'http://localhost:5173'], // allow both ports
+  credentials: true
+}));
 
 app.use(passport.initialize());
 
