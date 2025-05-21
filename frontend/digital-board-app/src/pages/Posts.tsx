@@ -84,10 +84,11 @@ const Posts: React.FC<{ user: User }> = ({ user }) => {
   const [showModal, setShowModal] = useState(false);
   const [commentInputs, setCommentInputs] = useState<Record<string, string>>({});
   const [replyInputs, setReplyInputs] = useState<Record<string, string>>({});
-  const [showComments, setShowComments] = useState(false);
   const [filter, setFilter] = useState<'all' | 'pinned' | 'mostLiked'>('all');
   const [isAdmin, setIsAdmin] = useState<Boolean>(user.role === 'G7' || user.role === 'G8');
   const [editingPostId, setEditingPostId] = useState<string | null>(null);
+  const [visibleComments, setVisibleComments] = useState<Record<string, boolean>>({});
+
 
   const token = localStorage.getItem("token")
 
@@ -217,6 +218,14 @@ const Posts: React.FC<{ user: User }> = ({ user }) => {
     }
   };
 
+  const toggleCommentsForPost = (postId: string) => {
+  setVisibleComments(prev => ({
+    ...prev,
+    [postId]: !prev[postId],
+  }));
+};
+
+
   const handleEditPost = (postId: string, content: string, imageBase64?: string) => {
     setEditingPostId(postId);
     setContent(content);
@@ -286,8 +295,9 @@ const Posts: React.FC<{ user: User }> = ({ user }) => {
           )}
         </>
       )}
-
-      {[...posts]
+      {posts.length === 0 ? (
+        <div className="text-center text-gray-500 mt-10">No posts are there</div>
+      ) : ([...posts]
         .sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0))
         .map((post) => (
           <div key={post._id} className="relative w-full max-w-xl mx-auto mb-6 p-4 bg-white rounded-xl shadow-md border border-gray-200">
@@ -319,12 +329,12 @@ const Posts: React.FC<{ user: User }> = ({ user }) => {
               onReact={(reaction) => handleReact(post._id, reaction)}
               onPin={() => handlePin(post._id)}
               onDelete={() => handleDelete(post._id)}
-              onToggleComments={() => setShowComments(prev => !prev)}
+              onToggleComments={() => toggleCommentsForPost(post._id)}
               onEdit={() => handleEditPost(post._id, post.content, post.imageBase64)}
             />
 
 
-            {showComments && (
+            {visibleComments[post._id] && (
               <PostComments
                 postId={post._id}
                 comments={post.comments}
@@ -339,7 +349,7 @@ const Posts: React.FC<{ user: User }> = ({ user }) => {
             )}
 
           </div>
-        ))}
+        )))}
     </div>
   );
 };

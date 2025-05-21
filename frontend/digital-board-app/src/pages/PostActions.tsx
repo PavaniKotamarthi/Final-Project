@@ -117,7 +117,11 @@ const PostActions: React.FC<PostActionsProps> = ({
           <FaCommentDots /> {commentsCount} Comments
         </button>
 
-
+        {/* ✅ Total Reactions Count in bottom right */}
+        <div className="cursor-pointer absolute bottom-0 right-3 text-lg text-gray-500"
+          onClick={() => setShowReactionOverlay(true)}>
+          Total Reactions: {Object.values(reactionCounts).reduce((sum, count) => sum + count, 0)}
+        </div>
       </div>
       {/* Admin Icons */}
       {isAdmin && (
@@ -140,11 +144,7 @@ const PostActions: React.FC<PostActionsProps> = ({
 
         </div>
       )}
-      {/* ✅ Total Reactions Count in bottom right */}
-      <div className="cursor-pointer absolute bottom-5 right-3 text-lg text-gray-500"
-        onClick={() => setShowReactionOverlay(true)}>
-        Total Reactions: {Object.values(reactionCounts).reduce((sum, count) => sum + count, 0)}
-      </div>
+
       {
         !isAdmin && pinned && (
           <div className='absolute top-10 right-3 flex gap-3 text-gray-500'>
