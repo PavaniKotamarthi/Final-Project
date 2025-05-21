@@ -97,15 +97,16 @@ const Login = () => {
 
         {/* Social Icons */}
         <div className="flex justify-center space-x-4">
-          <button className="p-2 rounded-full bg-gray-100 hover:bg-blue-600 hover:text-white">
-            <FaFacebookF />
-          </button>
-          <button className="p-2 rounded-full bg-gray-100 hover:bg-red-500 hover:text-white">
+          <a href="http://localhost:5000/auth/google" className="p-2 rounded-full bg-gray-100 hover:bg-red-500 hover:text-white">
             <FaGoogle />
-          </button>
-          <button className="p-2 rounded-full bg-gray-100 hover:bg-gray-800 hover:text-white">
+          </a>
+          <a
+            href="http://localhost:5000/auth/github"
+            className="p-2 rounded-full bg-gray-100 hover:bg-gray-800 hover:text-white"
+          >
             <FaGithub />
-          </button>
+          </a>
+
         </div>
       </div>
     </div>

@@ -5,6 +5,7 @@ import Register from './pages/Register';
 import ProtectedRoute from './components/ProtectedRoute';
 import PostsPage from './pages/PostsPage';
 import QuestionsPage from './pages/QuestionsPage';
+import OAuthSuccess from './pages/OAuthSuccess';
 
 function App() {
   return (
@@ -12,6 +13,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/oauth-success" element={<OAuthSuccess />} /> {/* ⬅️ Add this route */}
         
         {/* Protected Dashboard Route with Nested Routes */}
         <Route
